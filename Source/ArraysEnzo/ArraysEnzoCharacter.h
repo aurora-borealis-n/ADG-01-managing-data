@@ -47,6 +47,15 @@ class AArraysEnzoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ClickAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Material, meta = (AllowPrivateAccess = "true"))
+	UMaterialInterface* NewMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SaveAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* LoadAction;
+	
 public:
 	AArraysEnzoCharacter();
 	
@@ -60,6 +69,8 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 	void Clicked(const FInputActionValue& Value);
+	void Save(const FInputActionValue& Value);
+	void Load(const FInputActionValue& Value);
 
 protected:
 	// APawn interface

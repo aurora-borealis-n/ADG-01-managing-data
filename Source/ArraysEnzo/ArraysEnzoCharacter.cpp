@@ -10,12 +10,20 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "MySaveGame.h"
 #include "Weapon.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
-//////////////////////////////////////////////////////////////////////////
+/**
+ * A constructor for the ArraysEnzoCharacter class.
+ * It initializes the character's collision capsule size, controller rotation settings,
+ * character movement settings, camera boom, and follow camera.
+ *
+ * @return None
+ */
 // AArraysEnzoCharacter
 
 AArraysEnzoCharacter::AArraysEnzoCharacter()
@@ -69,6 +77,8 @@ void AArraysEnzoCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -90,6 +100,9 @@ void AArraysEnzoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AArraysEnzoCharacter::Look);
 
 		EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, this, &AArraysEnzoCharacter::Clicked);
+
+		EnhancedInputComponent->BindAction(SaveAction, ETriggerEvent::Started, this, &AArraysEnzoCharacter::Save);
+		EnhancedInputComponent->BindAction(LoadAction, ETriggerEvent::Started, this, &AArraysEnzoCharacter::Load);
 	}
 	else
 	{
@@ -136,7 +149,6 @@ void AArraysEnzoCharacter::Look(const FInputActionValue& Value)
 void AArraysEnzoCharacter::Clicked(const FInputActionValue& Value)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> objectTypes;
-	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
 	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
 
 	TArray<AActor*> ignoreActors;
@@ -157,7 +169,57 @@ void AArraysEnzoCharacter::Clicked(const FInputActionValue& Value)
 	// Finally iterate over the outActor array
 	for (AActor* overlappedActor : hitActors) {
 		UE_LOG(LogTemp, Log, TEXT("OverlappedActor: %s"), *overlappedActor->GetName());
+
+		auto* staticMesh = overlappedActor->GetComponentByClass<UStaticMeshComponent>();
+		if(staticMesh != nullptr)
+		{
+			if(staticMesh->GetMaterial(0) == NewMaterial)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Setting old mesh material"));
+				staticMesh->SetMaterial(0, nullptr);
+			} else
+			{
+				UE_LOG(LogTemp, Log, TEXT("Setting new mesh material"));
+				staticMesh->SetMaterial(0, NewMaterial);
+			}
+		}
+		
 	}
 	
 }
 
+void AArraysEnzoCharacter::Save(const FInputActionValue& Value)
+{
+	auto exists = UGameplayStatics::DoesSaveGameExist("mySaveGame", 0);
+
+	USaveGame* saveGame;
+	if(!exists)
+	{
+		saveGame = UGameplayStatics::CreateSaveGameObject(UMySaveGame::StaticClass());
+	} else
+	{
+		saveGame = UGameplayStatics::LoadGameFromSlot("mySaveGame", 0);
+	}
+
+	UMySaveGame* mySaveGame = Cast<UMySaveGame>(saveGame);
+
+	mySaveGame->PlayerLocation = GetActorTransform();
+
+	UGameplayStatics::SaveGameToSlot(mySaveGame, "mySaveGame", 0);
+}
+
+void AArraysEnzoCharacter::Load(const FInputActionValue& Value)
+{
+	auto exists = UGameplayStatics::DoesSaveGameExist("mySaveGame", 0);
+
+	USaveGame* saveGame;
+	if(!exists)
+	{
+		return;	
+	} 
+	
+	saveGame = UGameplayStatics::LoadGameFromSlot("mySaveGame", 0);
+	UMySaveGame* mySaveGame = Cast<UMySaveGame>(saveGame);
+
+	SetActorTransform(mySaveGame->PlayerLocation);
+}
