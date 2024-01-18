@@ -137,10 +137,10 @@ void AArraysEnzoCharacter::Clicked(const FInputActionValue& Value)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> objectTypes;
 	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
-	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
+	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
 
 	TArray<AActor*> ignoreActors;
-	// ignoreActors.Add()
+
 
 	TArray<AActor*> hitActors;
 	
@@ -157,7 +157,21 @@ void AArraysEnzoCharacter::Clicked(const FInputActionValue& Value)
 	// Finally iterate over the outActor array
 	for (AActor* overlappedActor : hitActors) {
 		UE_LOG(LogTemp, Log, TEXT("OverlappedActor: %s"), *overlappedActor->GetName());
+
+		auto* mesh = overlappedActor->GetComponentByClass<UStaticMeshComponent>();
+		if(mesh != nullptr)
+		{
+			for(int i = 0; i < mesh->GetNumMaterials(); i++)
+			{
+				mesh->SetMaterial( i , NewMaterial[i]);
+			}
+			
+			
+		}
+		
 	}
+
+	
 	
 }
 

@@ -47,6 +47,9 @@ class AArraysEnzoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ClickAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Material, meta = (AllowPrivateAccess = "true"))
+	TArray<UMaterialInterface*> NewMaterial;
+
 public:
 	AArraysEnzoCharacter();
 	
