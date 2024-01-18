@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ArraysEnzoCharacter.h"
+
+#include "ArraysEnzoSaveGame.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -11,6 +13,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Weapon.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -54,6 +57,8 @@ AArraysEnzoCharacter::AArraysEnzoCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	SaveSlot = "Whatever";
 }
 
 void AArraysEnzoCharacter::BeginPlay()
@@ -74,6 +79,7 @@ void AArraysEnzoCharacter::BeginPlay()
 //////////////////////////////////////////////////////////////////////////
 // Input
 
+
 void AArraysEnzoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
@@ -90,6 +96,8 @@ void AArraysEnzoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AArraysEnzoCharacter::Look);
 
 		EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, this, &AArraysEnzoCharacter::Clicked);
+		EnhancedInputComponent->BindAction(LoadAction, ETriggerEvent::Started, this, &AArraysEnzoCharacter::Load);
+		EnhancedInputComponent->BindAction(SaveAction, ETriggerEvent::Started, this, &AArraysEnzoCharacter::Save);
 	}
 	else
 	{
@@ -174,4 +182,58 @@ void AArraysEnzoCharacter::Clicked(const FInputActionValue& Value)
 	
 	
 }
+
+void AArraysEnzoCharacter::Save(const FInputActionValue& Value)
+{
+	auto saveExists = UGameplayStatics::DoesSaveGameExist(SaveSlot, 0);
+
+	if(saveExists)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Overwriting"))
+	}
+
+	auto* saveGame = UGameplayStatics::CreateSaveGameObject(UArraysEnzoSaveGame::StaticClass());
+	auto* convertedSaveGame = Cast<UArraysEnzoSaveGame>(saveGame);
+
+	convertedSaveGame->PlayerTransform = GetActorTransform();
+	
+	auto saved = UGameplayStatics::SaveGameToSlot(convertedSaveGame, SaveSlot, 0);
+
+	if(saved)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Saved Succesfully"));
+	} else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Save Failed"));
+	}
+	
+}
+
+
+void AArraysEnzoCharacter::Load(const FInputActionValue& Value)
+{
+	auto saveExists = UGameplayStatics::DoesSaveGameExist(SaveSlot, 0);
+
+	if(!saveExists)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No Save File. Cancelling"))
+		return;
+	}
+
+	auto* saveGame = UGameplayStatics::LoadGameFromSlot(SaveSlot, 0);
+	auto* convertedSaveGame = Cast<UArraysEnzoSaveGame>(saveGame);
+
+	auto loaded = SetActorTransform(convertedSaveGame->PlayerTransform);
+
+	if(loaded)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Loaded Succesfully"));
+	} else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Load Failed"));
+	}
+
+}
+
+
 
